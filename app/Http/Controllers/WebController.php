@@ -7,28 +7,31 @@ use Illuminate\Http\Request;
 class WebController extends Controller
 {
     public $url = null;
+    public $result = array();
 
-    public $robots_isset = null;
+    public $status_recomendation_default = "Доработки не требуются";
+
+    public $robots_isset = false;
     public $robots_status = "Файл robots.txt отсутствует";
     public $robots_recomendation = "Программист: Создать файл robots.txt и разместить его на сайте.";
 
-    public $robots_responce = null;
+    public $robots_responce = false;
     public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа (указать код)";
     public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
-    public $robots_size = null;
-    public $robots_size_status = "Размера файла robots.txt составляет __, что превышает допустимую норму";
-    public $robots_size_recomendation = "Программист: Максимально допустимый размер файла robots.txt составляем 32 кб. Необходимо отредактировть файл robots.txt таким образом, чтобы его размер не превышал 32 Кб";
-
-    public $host_isset = null;
+    public $host_isset = false;
     public $host_status = "В файле robots.txt не указана директива Host";
     public $host_recomendation = "Программист: Для того, чтобы поисковые системы знали, какая версия сайта является основных зеркалом, необходимо прописать адрес основного зеркала в директиве Host. В данный момент это не прописано. Необходимо добавить в файл robots.txt директиву Host. Директива Host задётся в файле 1 раз, после всех правил.";
 
-    public $host_count = null;
+    public $host_count = false;
     public $host_count_status = "В файле прописано несколько директив Host";
     public $host_count_recomendation = "Программист: Директива Host должна быть указана в файле толоко 1 раз. Необходимо удалить все дополнительные директивы Host и оставить только 1, корректную и соответствующую основному зеркалу сайта";
 
-    public $sitemap_isset = null;
+    public $robots_size = false;
+    public $robots_size_status = "Размера файла robots.txt составляет __, что превышает допустимую норму";
+    public $robots_size_recomendation = "Программист: Максимально допустимый размер файла robots.txt составляем 32 кб. Необходимо отредактировть файл robots.txt таким образом, чтобы его размер не превышал 32 Кб";
+
+    public $sitemap_isset = false;
     public $sitemap_isset_status = "В файле robots.txt не указана директива Sitemap";
     public $sitemap_isset_recomendation = "Программист: Добавить в файл robots.txt директиву Sitemap";
 
@@ -59,33 +62,10 @@ class WebController extends Controller
 
                 if ($this->success) {
 
-                    $result = array();
+                    $this->recomendations();
+                    $this->saveData();
 
-                    $result = array_add($result, 'robots_isset', $this->robots_isset);
-                    $result = array_add($result, 'robots_status', $this->robots_status);
-                    $result = array_add($result, 'robots_recomendation', $this->robots_recomendation);
-
-                    $result = array_add($result, 'host_isset', $this->host_isset);
-                    $result = array_add($result, 'host_status', $this->host_status);
-                    $result = array_add($result, 'host_recomendation', $this->host_recomendation);
-
-                    $result = array_add($result, 'host_count', $this->host_count);
-                    $result = array_add($result, 'host_count_status', $this->host_count_status);
-                    $result = array_add($result, 'host_count_recomendation', $this->host_count_recomendation);
-
-                    $result = array_add($result, 'robots_size', $this->robots_size);
-                    $result = array_add($result, 'robots_size_status', $this->robots_size_status);
-                    $result = array_add($result, 'robots_size_recomendation', $this->robots_size_recomendation);
-
-                    $result = array_add($result, 'sitemap_isset', $this->sitemap_isset);
-                    $result = array_add($result, 'sitemap_isset_status', $this->sitemap_isset_status);
-                    $result = array_add($result, 'sitemap_isset_recomendation', $this->sitemap_isset_recomendation);
-
-                    $result = array_add($result, 'robots_responce', $this->robots_responce);
-                    $result = array_add($result, 'robots_responce_status', $this->robots_responce_status);
-                    $result = array_add($result, 'robots_responce_recomendation', $this->robots_responce_recomendation);
-
-//                    dd($result);
+                    $result = $this->result;
 
                     return view('response', compact('result'));
                 } else {
@@ -186,6 +166,8 @@ class WebController extends Controller
 
             } else {
 
+                $this->robots_isset = true;
+
                 // Начинаем обрабатывать файл, если все прошло успешно
                 $file_arr = file("robots.txt");
                 $textget = file_get_contents($resultfile);
@@ -206,7 +188,6 @@ class WebController extends Controller
 
 //                      :todo кол-во директив Sitemap
 
-
                 } else {
                     echo "Дерективы Sitemap нет";
                 }
@@ -218,9 +199,60 @@ class WebController extends Controller
         }
     }
 
-    public
-    function recomendations()
+    public function recomendations()
     {
+        if ($this->robots_isset){
+            $this->robots_status = "Файл robots.txt присутствует";
+            $this->robots_recomendation = $this->status_recomendation_default;
+        }
 
+        if ($this->host_isset){
+            $this->host_status = "Директива Host указана";
+            $this->host_recomendation = $this->status_recomendation_default;
+        }
+
+        if ($this->host_count){
+            //            todo: count
+            $this->host_count_status = "В файле прописана 1 директива Host";
+            $this->host_count_recomendation = $this->status_recomendation_default;
+        }
+
+        if ($this->robots_size){
+            //            todo: size
+            $this->robots_size_status = "Размер файла robots.txt составляет __, что находится в пределах допустимой нормы";
+            $this->robots_size_recomendation = $this->status_recomendation_default;
+        }
+
+        if ($this->sitemap_isset){
+            $this->robots_size_status = "Директива Sitemap указана";
+            $this->sitemap_isset_recomendation = $this->status_recomendation_default;
+        }
+    }
+
+    public function saveData()
+    {
+        $this->result = array_add($this->result, 'robots_isset', $this->robots_isset);
+        $this->result = array_add($this->result, 'robots_status', $this->robots_status);
+        $this->result = array_add($this->result, 'robots_recomendation', $this->robots_recomendation);
+
+        $this->result = array_add($this->result, 'host_isset', $this->host_isset);
+        $this->result = array_add($this->result, 'host_status', $this->host_status);
+        $this->result = array_add($this->result, 'host_recomendation', $this->host_recomendation);
+
+        $this->result = array_add($this->result, 'host_count', $this->host_count);
+        $this->result = array_add($this->result, 'host_count_status', $this->host_count_status);
+        $this->result = array_add($this->result, 'host_count_recomendation', $this->host_count_recomendation);
+
+        $this->result = array_add($this->result, 'robots_size', $this->robots_size);
+        $this->result = array_add($this->result, 'robots_size_status', $this->robots_size_status);
+        $this->result = array_add($this->result, 'robots_size_recomendation', $this->robots_size_recomendation);
+
+        $this->result = array_add($this->result, 'sitemap_isset', $this->sitemap_isset);
+        $this->result = array_add($this->result, 'sitemap_isset_status', $this->sitemap_isset_status);
+        $this->result = array_add($this->result, 'sitemap_isset_recomendation', $this->sitemap_isset_recomendation);
+
+        $this->result = array_add($this->result, 'robots_responce', $this->robots_responce);
+        $this->result = array_add($this->result, 'robots_responce_status', $this->robots_responce_status);
+        $this->result = array_add($this->result, 'robots_responce_recomendation', $this->robots_responce_recomendation);
     }
 }
