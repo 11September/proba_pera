@@ -48,6 +48,10 @@ body {
     border-top-right-radius: 0;
 }
 
-#inputEmail{
-    margin-bottom: 30px;
+#site{
+    margin-bottom: 20px;
+}
+
+.alert-warning{
+    margin-top: 30px;
 }

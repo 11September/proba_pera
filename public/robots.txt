@@ -1,2 +1,3 @@
-User-agent: *
-Disallow:
+User-agent: * 
+Host: www.redbox.in.ua
+Sitemap: http://redbox.in.ua/sitemap.xml
