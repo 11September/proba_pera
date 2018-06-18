@@ -16,7 +16,8 @@ class WebController extends Controller
     public $robots_recomendation = "Программист: Создать файл robots.txt и разместить его на сайте.";
 
     public $robots_responce = false;
-    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа (указать код)";
+    public $robots_responce_http = "HTTP/1.1 404 Not Found";
+    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа ";
     public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
     public $host_isset = false;
@@ -24,14 +25,17 @@ class WebController extends Controller
     public $host_recomendation = "Программист: Для того, чтобы поисковые системы знали, какая версия сайта является основных зеркалом, необходимо прописать адрес основного зеркала в директиве Host. В данный момент это не прописано. Необходимо добавить в файл robots.txt директиву Host. Директива Host задётся в файле 1 раз, после всех правил.";
 
     public $host_count = false;
+    public $host_count_count = 0;
     public $host_count_status = "В файле прописано несколько директив Host";
     public $host_count_recomendation = "Программист: Директива Host должна быть указана в файле толоко 1 раз. Необходимо удалить все дополнительные директивы Host и оставить только 1, корректную и соответствующую основному зеркалу сайта";
 
     public $robots_size = false;
+    public $robots_size_size = 0;
     public $robots_size_status = "Размера файла robots.txt составляет __, что превышает допустимую норму";
     public $robots_size_recomendation = "Программист: Максимально допустимый размер файла robots.txt составляем 32 кб. Необходимо отредактировть файл robots.txt таким образом, чтобы его размер не превышал 32 Кб";
 
     public $sitemap_isset = false;
+    public $sitemap_count_count = 0;
     public $sitemap_isset_status = "В файле robots.txt не указана директива Sitemap";
     public $sitemap_isset_recomendation = "Программист: Добавить в файл robots.txt директиву Sitemap";
 
@@ -57,23 +61,12 @@ class WebController extends Controller
 
             if (!$fileRobots) {
                 $url = $this->changeTypeHttp();
-
                 $this->robots($url);
+                $this->recomendations();
+                $this->saveData();
+                $result = $this->result;
 
-                if ($this->success) {
-
-                    $this->recomendations();
-                    $this->saveData();
-
-                    $result = $this->result;
-
-                    return view('response', compact('result'));
-                } else {
-
-                    dd("52");
-
-                    return redirect()->back()->with('message', "адрес $this->url некоректный");
-                }
+                return view('response', compact('result'));
             }
         }
     }
@@ -137,93 +130,95 @@ class WebController extends Controller
         $current_url = $url . '/robots.txt'; // пример URL
         $file_headers = @get_headers($current_url);
 
-        if ($file_headers[0] == 'HTTP/1.1 404 Not Found') {
+        $this->robots_responce_http = $file_headers[0];
 
-            $this->robots_responce = "Возникла ошибка, при получении файлов - $current_url";
-
-        } else if ($file_headers[0] == 'HTTP/1.1 200 OK') {
-
+        if ($file_headers[0] == 'HTTP/1.1 200 OK') {
+            $this->robots_responce = true;
             $this->robots_responce = "$current_url - HTTP/1.1 200 OK";
-
-            // открываем файл для записи, поехали!
-            $file = fopen('robots.txt', 'w');
-
-            // инициализация cURL
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $current_url);
-            curl_setopt($ch, CURLOPT_FILE, $file);
-            curl_exec($ch);
-            fclose($file);
-            curl_close($ch);
-
-            global $resultfile; // описываем как глобальную переменную
-            $resultfile = 'robots.txt'; // файл, который получили
-
-            if (!file_exists($resultfile)) {
-
-                echo "Ошибка обработки файла";
-                $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
-
-            } else {
-
-                $this->robots_isset = true;
-
-                // Начинаем обрабатывать файл, если все прошло успешно
-                $file_arr = file("robots.txt");
-                $textget = file_get_contents($resultfile);
-                htmlspecialchars($textget); // при желании, можно вывести на экран через echo
-
-                if (preg_match("/Host/", $textget, $matches)) {
-
-                    echo "Деректива Host есть";
-
-//                     :todo кол-во директив Host
-
-                } else {
-                    echo "Дерективы Host нет";
-                }
-
-                if (preg_match("/Sitemap/", $textget, $matches)) {
-                    echo "Деректива Sitemap есть";
-
-//                      :todo кол-во директив Sitemap
-
-                } else {
-                    echo "Дерективы Sitemap нет";
-                }
-
-                echo 'Размер файла ' . $resultfile . ': ' . filesize($resultfile) . ' байт';
-
-                $this->success = true;
-            }
+        }else{
+            $this->robots_responce = false;
+            $this->robots_responce_status = $this->robots_responce_status . $this->robots_responce_http;
         }
+
+        // открываем файл для записи, поехали!
+        $file = fopen('robots.txt', 'w');
+
+        // инициализация cURL
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $current_url);
+        curl_setopt($ch, CURLOPT_FILE, $file);
+        curl_exec($ch);
+        fclose($file);
+        curl_close($ch);
+
+        global $resultfile; // описываем как глобальную переменную
+        $resultfile = 'robots.txt'; // файл, который получили
+
+        if (!file_exists($resultfile)) {
+
+            echo "Ошибка обработки файла";
+            $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
+
+        } else {
+
+            $this->robots_isset = true;
+
+            // Начинаем обрабатывать файл, если все прошло успешно
+            $file_arr = file("robots.txt");
+            $textget = file_get_contents($resultfile);
+            htmlspecialchars($textget); // при желании, можно вывести на экран через echo
+
+            if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
+                $this->host_count_count = $matches;
+
+                if (count(($this->host_count_count) == 1)) {
+                    $this->host_isset = true;
+                }
+            }
+
+            if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
+                $this->sitemap_count_count = $matches;
+
+                if (count(($this->sitemap_count_count) == 1)) {
+                    $this->sitemap_isset = true;
+                }
+            }
+
+            $this->robots_size_size = filesize($resultfile);
+
+//            todo : проверка размера
+//            dd($this->robots_size_size);
+
+            $this->success = true;
+        }
+
     }
 
     public function recomendations()
     {
-        if ($this->robots_isset){
+        if ($this->robots_isset) {
             $this->robots_status = "Файл robots.txt присутствует";
             $this->robots_recomendation = $this->status_recomendation_default;
         }
 
-        if ($this->host_isset){
+        if ($this->host_isset) {
             $this->host_status = "Директива Host указана";
             $this->host_recomendation = $this->status_recomendation_default;
         }
 
-        if ($this->host_count){
+        if ($this->host_count) {
             //            todo: count
-            $this->host_count_status = "В файле прописана 1 директива Host";
+            $this->host_count_status = "В файле прописана $this->host_count_count директива Host";
             $this->host_count_recomendation = $this->status_recomendation_default;
         }
 
-        if ($this->robots_size){
+        if ($this->robots_size) {
             //            todo: size
             $this->robots_size_status = "Размер файла robots.txt составляет __, что находится в пределах допустимой нормы";
             $this->robots_size_recomendation = $this->status_recomendation_default;
         }
 
-        if ($this->sitemap_isset){
+        if ($this->sitemap_isset) {
             $this->robots_size_status = "Директива Sitemap указана";
             $this->sitemap_isset_recomendation = $this->status_recomendation_default;
         }

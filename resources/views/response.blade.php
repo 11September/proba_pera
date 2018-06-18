@@ -67,14 +67,14 @@
                     <tr>
                         <th scope="row">1</th>
                         <td>Проверка наличия файла robots.txt</td>
-                        <td>Ок</td>
+                        <td class="@if($result['robots_isset'])green @else red @endif">@if($result['robots_isset'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['robots_status'] }}</td>
                         <td>{{ $result['robots_recomendation'] }}</td>
                     </tr>
                     <tr>
                         <th scope="row">2</th>
                         <td>Проверка указания директивы Host</td>
-                        <td>Ок</td>
+                        <td class="@if($result['host_isset'])green @else red @endif">@if($result['host_isset'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['host_status'] }}</td>
                         <td>{{ $result['host_recomendation'] }}</td>
                     </tr>
@@ -95,14 +95,14 @@
                     <tr>
                         <th scope="row">5</th>
                         <td>Проверка указания директивы Sitemap</td>
-                        <td>Ок</td>
+                        <td class="@if($result['sitemap_isset'])green @else red @endif">@if($result['sitemap_isset'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['sitemap_isset_status'] }}</td>
                         <td>{{ $result['sitemap_isset_recomendation'] }}</td>
                     </tr>
                     <tr>
                         <th scope="row">6</th>
                         <td>Проверка кода ответа сервера для файла robots.txt</td>
-                        <td>Ок</td>
+                        <td class="@if($result['robots_responce'])green @else red @endif">@if($result['robots_responce'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['robots_responce_status'] }}</td>
                         <td>{{ $result['robots_responce_recomendation'] }}</td>
                     </tr>

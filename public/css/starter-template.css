@@ -9,3 +9,16 @@ body {
 #site{
   margin-bottom: 20px;
 }
+
+.green{
+  background-color: green;
+}
+
+.red{
+  background-color: red;
+}
+
+.table td, .table th{
+  text-align: center !important;
+  vertical-align: middle !important;
+}
