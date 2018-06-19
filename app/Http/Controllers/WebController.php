@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\InvoicesExport;
+use App\Exports\RobotsExport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class WebController extends Controller
 {
@@ -69,7 +72,7 @@ class WebController extends Controller
                 $this->recomendations();
                 $this->saveData();
                 $result = $this->result;
-//                dd($result);
+                $excel = $this->storeExcel($result);
 
                 return view('response', compact('result', 'request_site'));
             }
@@ -248,5 +251,15 @@ class WebController extends Controller
         $this->result = array_add($this->result, 'robots_responce', $this->robots_responce);
         $this->result = array_add($this->result, 'robots_responce_status', $this->robots_responce_status);
         $this->result = array_add($this->result, 'robots_responce_recomendation', $this->robots_responce_recomendation);
+    }
+
+    public function storeExcel($data)
+    {
+        return Excel::store(new RobotsExport($data), 'robots.xlsx', 'public');
+    }
+
+    public function saveExcel()
+    {
+        return response()->download("storage/robots.xlsx")->deleteFileAfterSend(true);
     }
 }

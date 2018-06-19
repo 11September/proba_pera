@@ -16,3 +16,4 @@ Route::get('/', function () {
 });
 
 Route::get('/check', 'WebController@form');
+Route::get('/saveExcel', 'WebController@saveExcel');
