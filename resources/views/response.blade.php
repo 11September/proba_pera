@@ -23,7 +23,7 @@
 
     <div class="collapse navbar-collapse" id="navbarsExampleDefault">
         <ul class="navbar-nav mr-auto"></ul>
-        <form action="{{ action('WebController@form') }}" method="post" class="form-inline my-2 my-lg-0">
+        <form action="{{ action('WebController@form') }}" method="get" class="form-inline my-2 my-lg-0">
             {{ csrf_field() }}
 
             <input value="@if($request_site) {{ $request_site }} @endif" name="site" type="text" class="form-control mr-sm-2" placeholder="адрес сайта" aria-label="Search" required autofocus>
@@ -35,7 +35,7 @@
 <main role="main" class="container">
 
     <div class="starter-template">
-        <form action="{{ action('WebController@form') }}" method="post" class="form-signin">
+        <form action="{{ action('WebController@form') }}" method="get" class="form-signin">
             {{ csrf_field() }}
 
             <h1 class="h3 mb-3 font-weight-normal">Укажите адрес сайта</h1>
