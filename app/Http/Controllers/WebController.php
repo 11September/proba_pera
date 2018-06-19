@@ -50,11 +50,12 @@ class WebController extends Controller
             'site' => 'required',
         ]);
 
-        $this->site = $request->site;
+        $request_site = $request->site;
+
         $requestUrl = $this->parse_url_if_valid($request->site, "https");
 
         if (!$requestUrl) {
-            return redirect()->back()->with('message', "адрес $this->url некоректный");
+            return redirect()->back()->with('message', "адрес $request_site некоректный", compact('request_site'));
         } else {
             clearstatcache();
 
@@ -68,7 +69,6 @@ class WebController extends Controller
                 $this->recomendations();
                 $this->saveData();
                 $result = $this->result;
-                $request_site = $this->site;
 //                dd($result);
 
                 return view('response', compact('result', 'request_site'));
