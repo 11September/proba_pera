@@ -7,19 +7,18 @@ use Illuminate\Http\Request;
 class WebController extends Controller
 {
     public $url = null;
+    public $site = null;
+    public $nesessaryFile = "robots.txt";
     public $textFileRobot = null;
     public $result = array();
-
+    public $valid = null;
+    public $success = false;
     public $status_recomendation_default = "Доработки не требуются";
+
 
     public $robots_isset = false;
     public $robots_status = "Файл robots.txt отсутствует";
     public $robots_recomendation = "Программист: Создать файл robots.txt и разместить его на сайте.";
-
-    public $robots_responce = false;
-    public $robots_responce_http = "HTTP/1.1 404 Not Found";
-    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа сервера 200";
-    public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
     public $host_isset = false;
     public $host_status = "В файле robots.txt не указана директива Host";
@@ -40,9 +39,10 @@ class WebController extends Controller
     public $sitemap_isset_status = "В файле robots.txt не указана директива Sitemap";
     public $sitemap_isset_recomendation = "Программист: Добавить в файл robots.txt директиву Sitemap";
 
-    public $valid = null;
-    public $success = false;
-
+    public $robots_responce = false;
+    public $robots_responce_http = "HTTP/1.1 404 Not Found";
+    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа ";
+    public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
     public function form(Request $request)
     {
@@ -50,6 +50,7 @@ class WebController extends Controller
             'site' => 'required',
         ]);
 
+        $this->site = $request->site;
         $requestUrl = $this->parse_url_if_valid($request->site, "https");
 
         if (!$requestUrl) {
@@ -67,10 +68,10 @@ class WebController extends Controller
                 $this->recomendations();
                 $this->saveData();
                 $result = $this->result;
-
+                $request_site = $this->site;
 //                dd($result);
 
-                return view('response', compact('result'));
+                return view('response', compact('result', 'request_site'));
             }
         }
     }
@@ -95,8 +96,7 @@ class WebController extends Controller
         // Если функция parse_url смогла определить host
         if (array_key_exists("host", $arUrl) && !empty($arUrl["host"])) {
             // Собираем конечное значение url
-            $ret = sprintf("%s://%s%s", $arUrl["scheme"],
-                $arUrl["host"], $arUrl["path"]);
+            $ret = sprintf("%s://%s%s", $arUrl["scheme"], $arUrl["host"], $arUrl["path"]);
 
             // Если значение хоста не определено
             // (обычно так бывает, если не указан протокол),
@@ -131,72 +131,68 @@ class WebController extends Controller
     public
     function robots($url = null)
     {
-        $current_url = $url . '/robots.txt'; // пример URL
+        global $resultfile;
+
+        $current_url = $url . '/' . $this->nesessaryFile; // пример URL
         $file_headers = @get_headers($current_url);
 
         $this->robots_responce_http = $file_headers[0];
 
-        if ($file_headers[0] == 'HTTP/1.1 200 OK') {
-
-            $this->robots_responce = "$current_url - HTTP/1.1 200 OK";
+        if ($file_headers[0] != 'HTTP/1.1 200 OK') {
+            $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
         } else {
-            $this->robots_responce = false;
-        }
+            $file = fopen('robots.txt', 'w');
 
-        $file = fopen('robots.txt', 'w');
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $current_url);
+            curl_setopt($ch, CURLOPT_FILE, $file);
+            curl_exec($ch);
+            fclose($file);
+            curl_close($ch);
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $current_url);
-        curl_setopt($ch, CURLOPT_FILE, $file);
-        curl_exec($ch);
-        fclose($file);
-        curl_close($ch);
+            $resultfile = $this->nesessaryFile;
 
-        global $resultfile;
-        $resultfile = 'robots.txt';
-
-        if (!file_exists($resultfile)) {
-            $this->robots_responce = false;
-            $this->robots_responce_status = $this->robots_responce_status . $this->robots_responce_http;
-            $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
-        } else {
-            $this->robots_responce = true;
-            $this->robots_isset = true;
-
-            // Начинаем обрабатывать файл, если все прошло успешно
             $textget = file_get_contents($resultfile);
             $this->textFileRobot = $textget;
 
-            if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
-                $this->host_count_count = count($matches);
+            if (!file_exists($resultfile) || empty($textget)) {
+                $this->robots_responce = false;
+                $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
+                $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
+            } else {
+                $this->robots_isset = true;
+                $this->robots_responce = true;
 
-                if (($this->host_count_count) == 1) {
-                    $this->host_isset = true;
-                    $this->host_count = true;
+                if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
+                    $this->host_count_count = count($matches);
+
+                    if (($this->host_count_count) == 1) {
+                        $this->host_isset = true;
+                        $this->host_count = true;
+                    }
                 }
-            }
 
-            if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
-                $this->sitemap_count_count = count($matches);
+                if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
+                    $this->sitemap_count_count = count($matches);
 
-                if (($this->sitemap_count_count) == 1) {
-                    $this->sitemap_isset = true;
-                    $this->sitemap_count_count = true;
+                    if (($this->sitemap_count_count) == 1) {
+                        $this->sitemap_isset = true;
+                        $this->sitemap_count_count = true;
+                    }
                 }
+
+                $filesize = filesize($resultfile);
+
+                if ($this->robots_isset && $filesize > 0 && $filesize <= 32000) {
+                    $this->robots_size = true;
+                    $this->sitemap_count_count = $filesize;
+                } else {
+                    $this->robots_size_status = "Размера файла robots.txt составляет $filesize байт, что превышает допустимую норму";
+                }
+
+                $this->success = true;
             }
-
-            $filesize = filesize($resultfile);
-
-            if ($filesize > 0 && $filesize <= 32000){
-                $this->robots_size = true;
-                $this->sitemap_count_count = $filesize;
-            }else{
-                $this->robots_size_status = "Размера файла robots.txt составляет $filesize байт, что превышает допустимую норму";
-            }
-
-            $this->success = true;
         }
-
     }
 
     public function recomendations()

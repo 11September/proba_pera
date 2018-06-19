@@ -26,7 +26,7 @@
         <form action="{{ action('WebController@form') }}" method="post" class="form-inline my-2 my-lg-0">
             {{ csrf_field() }}
 
-            <input name="site" type="text" class="form-control mr-sm-2" placeholder="адрес сайта" aria-label="Search" required autofocus>
+            <input value="@if($request_site) {{ $request_site }} @endif" name="site" type="text" class="form-control mr-sm-2" placeholder="адрес сайта" aria-label="Search" required autofocus>
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Проверить</button>
         </form>
     </div>
@@ -40,7 +40,7 @@
 
             <h1 class="h3 mb-3 font-weight-normal">Укажите адрес сайта</h1>
             <label for="site" class="sr-only">Адрес сайта</label>
-            <input name="site" type="text" id="site" class="form-control" placeholder="адрес сайта" required autofocus>
+            <input value="@if($request_site) {{ $request_site }} @endif" name="site" type="text" id="site" class="form-control" placeholder="адрес сайта" required autofocus>
             <button class="btn btn-lg btn-primary btn-block" type="submit">Проверить</button>
 
             @if(session()->has('message'))
