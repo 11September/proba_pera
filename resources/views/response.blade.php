@@ -81,14 +81,14 @@
                     <tr>
                         <th scope="row">3</th>
                         <td>Проверка количества директив Host, прописанных в файле</td>
-                        <td>Ок</td>
+                        <td class="@if($result['host_count'])green @else red @endif">@if($result['host_count'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['host_count_status'] }}</td>
                         <td>{{ $result['host_count_recomendation'] }}</td>
                     </tr>
                     <tr>
                         <th scope="row">4</th>
                         <td>Проверка размера файла robots.txt</td>
-                        <td>Ок</td>
+                        <td class="@if($result['robots_size'])green @else red @endif">@if($result['robots_size'])Ок@elseОшибка@endif</td>
                         <td>{{ $result['robots_size_status'] }}</td>
                         <td>{{ $result['robots_size_recomendation'] }}</td>
                     </tr>

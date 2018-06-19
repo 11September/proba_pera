@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 class WebController extends Controller
 {
     public $url = null;
+    public $textFileRobot = null;
     public $result = array();
 
     public $status_recomendation_default = "Доработки не требуются";
@@ -17,7 +18,7 @@ class WebController extends Controller
 
     public $robots_responce = false;
     public $robots_responce_http = "HTTP/1.1 404 Not Found";
-    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа ";
+    public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа сервера 200";
     public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
     public $host_isset = false;
@@ -54,6 +55,7 @@ class WebController extends Controller
         if (!$requestUrl) {
             return redirect()->back()->with('message', "адрес $this->url некоректный");
         } else {
+            clearstatcache();
 
             $this->url = $requestUrl;
 
@@ -65,6 +67,8 @@ class WebController extends Controller
                 $this->recomendations();
                 $this->saveData();
                 $result = $this->result;
+
+//                dd($result);
 
                 return view('response', compact('result'));
             }
@@ -133,17 +137,14 @@ class WebController extends Controller
         $this->robots_responce_http = $file_headers[0];
 
         if ($file_headers[0] == 'HTTP/1.1 200 OK') {
-            $this->robots_responce = true;
+
             $this->robots_responce = "$current_url - HTTP/1.1 200 OK";
-        }else{
+        } else {
             $this->robots_responce = false;
-            $this->robots_responce_status = $this->robots_responce_status . $this->robots_responce_http;
         }
 
-        // открываем файл для записи, поехали!
         $file = fopen('robots.txt', 'w');
 
-        // инициализация cURL
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $current_url);
         curl_setopt($ch, CURLOPT_FILE, $file);
@@ -151,43 +152,47 @@ class WebController extends Controller
         fclose($file);
         curl_close($ch);
 
-        global $resultfile; // описываем как глобальную переменную
-        $resultfile = 'robots.txt'; // файл, который получили
+        global $resultfile;
+        $resultfile = 'robots.txt';
 
         if (!file_exists($resultfile)) {
-
-            echo "Ошибка обработки файла";
+            $this->robots_responce = false;
+            $this->robots_responce_status = $this->robots_responce_status . $this->robots_responce_http;
             $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
-
         } else {
-
+            $this->robots_responce = true;
             $this->robots_isset = true;
 
             // Начинаем обрабатывать файл, если все прошло успешно
-            $file_arr = file("robots.txt");
             $textget = file_get_contents($resultfile);
-            htmlspecialchars($textget); // при желании, можно вывести на экран через echo
+            $this->textFileRobot = $textget;
 
             if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
-                $this->host_count_count = $matches;
+                $this->host_count_count = count($matches);
 
-                if (count(($this->host_count_count) == 1)) {
+                if (($this->host_count_count) == 1) {
                     $this->host_isset = true;
+                    $this->host_count = true;
                 }
             }
 
             if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
-                $this->sitemap_count_count = $matches;
+                $this->sitemap_count_count = count($matches);
 
-                if (count(($this->sitemap_count_count) == 1)) {
+                if (($this->sitemap_count_count) == 1) {
                     $this->sitemap_isset = true;
+                    $this->sitemap_count_count = true;
                 }
             }
 
-            $this->robots_size_size = filesize($resultfile);
+            $filesize = filesize($resultfile);
 
-//            todo : проверка размера
-//            dd($this->robots_size_size);
+            if ($filesize > 0 && $filesize <= 32000){
+                $this->robots_size = true;
+                $this->sitemap_count_count = $filesize;
+            }else{
+                $this->robots_size_status = "Размера файла robots.txt составляет $filesize байт, что превышает допустимую норму";
+            }
 
             $this->success = true;
         }
@@ -207,19 +212,17 @@ class WebController extends Controller
         }
 
         if ($this->host_count) {
-            //            todo: count
             $this->host_count_status = "В файле прописана $this->host_count_count директива Host";
             $this->host_count_recomendation = $this->status_recomendation_default;
         }
 
         if ($this->robots_size) {
-            //            todo: size
-            $this->robots_size_status = "Размер файла robots.txt составляет __, что находится в пределах допустимой нормы";
+            $this->robots_size_status = "Размер файла robots.txt составляет $this->sitemap_count_count байт, что находится в пределах допустимой нормы";
             $this->robots_size_recomendation = $this->status_recomendation_default;
         }
 
         if ($this->sitemap_isset) {
-            $this->robots_size_status = "Директива Sitemap указана";
+            $this->sitemap_isset_status = "Директива Sitemap указана";
             $this->sitemap_isset_recomendation = $this->status_recomendation_default;
         }
     }
