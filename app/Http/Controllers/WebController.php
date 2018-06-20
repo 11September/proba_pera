@@ -82,10 +82,7 @@ class WebController extends Controller
     function parse_url_if_valid($url, $type = null)
     {
         $this->url = $url;
-
-        // Массив с компонентами URL, сгенерированный функцией parse_url()
         $arUrl = parse_url($url);
-        // Возвращаемое значение. По умолчанию будет считать наш URL некорректным.
         $ret = null;
 
         // Если не был указан протокол, или
@@ -99,6 +96,10 @@ class WebController extends Controller
         // Если функция parse_url смогла определить host
         if (array_key_exists("host", $arUrl) && !empty($arUrl["host"])) {
             // Собираем конечное значение url
+            if (!isset($arUrl["path"])) {
+                $arUrl["path"] = "";
+            }
+
             $ret = sprintf("%s://%s%s", $arUrl["scheme"], $arUrl["host"], $arUrl["path"]);
 
             // Если значение хоста не определено
@@ -110,92 +111,90 @@ class WebController extends Controller
 
         // Если url валидный и передана строка параметров запроса
         if ($ret && empty($ret["query"]))
-
             $this->valid = "true";
         return $ret;
     }
 
-    public
-    function changeTypeHttp()
+    public function changeTypeHttp()
     {
         $url = str_replace('https://', 'http://', $this->url);
 
         return $url;
     }
 
-    public
-    function changeTypeHttps()
+    public function changeTypeHttps()
     {
         $url = str_replace('http://', 'https://', $this->url);
 
         return $url;
     }
 
-    public
-    function robots($url = null)
+    public function robots($url = null)
     {
         global $resultfile;
 
-        $current_url = $url . '/' . $this->nesessaryFile; // пример URL
+        $current_url = $url . '/' . $this->nesessaryFile;
+
         $file_headers = @get_headers($current_url);
 
         $this->robots_responce_http = $file_headers[0];
 
-        if ($file_headers[0] != 'HTTP/1.1 200 OK') {
+//        if ($file_headers[0] != 'HTTP/1.1 200 OK' || $file_headers[0] != 'HTTP/1.0 200 OK') {
+
+        $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
+
+        $file = fopen('robots.txt', 'w');
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $current_url);
+        curl_setopt($ch, CURLOPT_FILE, $file);
+        curl_exec($ch);
+        fclose($file);
+        curl_close($ch);
+
+        $resultfile = $this->nesessaryFile;
+
+        $textget = file_get_contents($resultfile);
+        $this->textFileRobot = $textget;
+
+        if (!file_exists($resultfile) || empty($textget)) {
+            $this->robots_responce = false;
             $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
+            $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
         } else {
-            $file = fopen('robots.txt', 'w');
+            $this->robots_isset = true;
+            $this->robots_responce = true;
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $current_url);
-            curl_setopt($ch, CURLOPT_FILE, $file);
-            curl_exec($ch);
-            fclose($file);
-            curl_close($ch);
+            if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
+                $this->host_count_count = count($matches);
 
-            $resultfile = $this->nesessaryFile;
-
-            $textget = file_get_contents($resultfile);
-            $this->textFileRobot = $textget;
-
-            if (!file_exists($resultfile) || empty($textget)) {
-                $this->robots_responce = false;
-                $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
-                $this->robots_responce = "Ошибка обработки файла - " . $resultfile . ". Возможно файл отсутсвует!";
-            } else {
-                $this->robots_isset = true;
-                $this->robots_responce = true;
-
-                if (preg_match_all("/Host/", $textget, $matches, PREG_SET_ORDER)) {
-                    $this->host_count_count = count($matches);
-
-                    if (($this->host_count_count) == 1) {
-                        $this->host_isset = true;
-                        $this->host_count = true;
-                    }
+                if (($this->host_count_count) == 1) {
+                    $this->host_isset = true;
+                    $this->host_count = true;
                 }
-
-                if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
-                    $this->sitemap_count_count = count($matches);
-
-                    if (($this->sitemap_count_count) == 1) {
-                        $this->sitemap_isset = true;
-                        $this->sitemap_count_count = true;
-                    }
-                }
-
-                $filesize = filesize($resultfile);
-
-                if ($this->robots_isset && $filesize > 0 && $filesize <= 32000) {
-                    $this->robots_size = true;
-                    $this->sitemap_count_count = $filesize;
-                } else {
-                    $this->robots_size_status = "Размера файла robots.txt составляет $filesize байт, что превышает допустимую норму";
-                }
-
-                $this->success = true;
             }
+
+            if (preg_match_all("/Sitemap/", $textget, $matches, PREG_SET_ORDER)) {
+                $this->sitemap_count_count = count($matches);
+
+                if (($this->sitemap_count_count) == 1) {
+                    $this->sitemap_isset = true;
+                    $this->sitemap_count_count = true;
+                }
+            }
+
+            $filesize = filesize($resultfile);
+
+            if ($this->robots_isset && $filesize > 0 && $filesize <= 32000) {
+                $this->robots_size = true;
+                $this->sitemap_count_count = $filesize;
+            } else {
+                $this->robots_size_status = "Размера файла robots.txt составляет $filesize байт, что превышает допустимую норму";
+            }
+
+            $this->success = true;
         }
+
     }
 
     public function recomendations()
