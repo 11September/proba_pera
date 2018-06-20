@@ -47,6 +47,12 @@ class WebController extends Controller
     public $robots_responce_status = "При обращении к файлу robots.txt сервер возвращает код ответа ";
     public $robots_responce_recomendation = "Программист: Файл robots.txt должны отдавать код ответа 200, иначе файл не будет обрабатываться. Необходимо настроить сайт таким образом, чтобы при обращении к файлу robots.txt сервер возвращает код ответа 200";
 
+
+    public function welcome()
+    {
+        return view('welcome');
+    }
+
     public function form(Request $request)
     {
         $request->validate([
@@ -63,7 +69,6 @@ class WebController extends Controller
             clearstatcache();
 
             $this->url = $requestUrl;
-
             $fileRobots = $this->robots($requestUrl);
 
             if (!$fileRobots) {
@@ -74,7 +79,11 @@ class WebController extends Controller
                 $result = $this->result;
                 $excel = $this->storeExcel($result);
 
-                return view('response', compact('result', 'request_site'));
+                if (!isset($excel) || !$excel){
+                    $excel = false;
+                }
+
+                return view('response', compact('result', 'request_site', 'excel'));
             }
         }
     }
@@ -139,7 +148,7 @@ class WebController extends Controller
 
         $this->robots_responce_http = $file_headers[0];
 
-//        if ($file_headers[0] != 'HTTP/1.1 200 OK' || $file_headers[0] != 'HTTP/1.0 200 OK') {
+//      if ($file_headers[0] != 'HTTP/1.1 200 OK' || $file_headers[0] != 'HTTP/1.0 200 OK') {
 
         $this->robots_responce = $this->robots_responce_status . $this->robots_responce_http;
 

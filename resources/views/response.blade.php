@@ -35,7 +35,6 @@
 </nav>
 
 <main role="main" class="container">
-
     <div class="starter-template">
         <form action="{{ action('WebController@form') }}" method="get" class="form-signin">
             {{ csrf_field() }}
@@ -56,7 +55,7 @@
 
         <div class="row">
             <div class="col-md-12">
-                <table class="table">
+                <table class="table table-bordered">
                     <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -120,13 +119,16 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="wrapper-excel-download">
-                    <a target="_blank" href="{{ action('WebController@saveExcel') }}" class="btn btn-lg btn-info btn-block">Скачать Excel</a>
+        @if($excel)
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="wrapper-excel-download">
+                        <a target="_blank" href="{{ action('WebController@saveExcel') }}"
+                           class="btn btn-lg btn-info btn-block">Скачать Excel</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
 
 </main><!-- /.container -->

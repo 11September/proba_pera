@@ -11,9 +11,6 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
+Route::get('/', 'WebController@welcome');
 Route::get('/check', 'WebController@form');
 Route::get('/saveExcel', 'WebController@saveExcel');
